@@ -1,0 +1,73 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: e2795b3cf9504cdcd2564680b05cc85f897b88ae1faf3ae579fe2da0466322cf
+
+name:           MazeLearner
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/MazeLearner#readme>
+homepage:       https://github.com/githubuser/MazeLearner#readme
+bug-reports:    https://github.com/githubuser/MazeLearner/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/MazeLearner
+
+library
+  exposed-modules:
+      Lib
+      BasicLearner
+      Serialization
+  other-modules:
+      Paths_MazeLearner
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , mtl
+    , tensorflow
+    , tensorflow-ops
+    , tensorflow-core-ops
+    , tensorflow-logging
+    , proto-lens
+    , vector
+    , MazeGame
+  default-language: Haskell2010
+
+executable basic-trainer
+  main-is: BasicTrainer.hs
+  other-modules:
+      Paths_MazeLearner
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      MazeGame
+    , MazeLearner
+    , base >=4.7 && <5
+  default-language: Haskell2010
+
+test-suite MazeLearner-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_MazeLearner
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      MazeLearner
+    , base >=4.7 && <5
+  default-language: Haskell2010

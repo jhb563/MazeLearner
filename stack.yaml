@@ -1,0 +1,28 @@
+resolver: lts-13.19
+
+packages:
+- .
+
+extra-deps:
+  - git: https://github.com/jhb563/MazeGame.git
+    commit: 9c17ca8966faeb2c352fea5b134038e4b8976b7a
+  - git: https://github.com/tensorflow/haskell.git
+    commit: d741c3ee59a5c9569fb2026bd01c1c8ff22fa7c7
+    subdirs:
+      - tensorflow
+      - tensorflow-ops
+      - tensorflow-core-ops
+      - tensorflow-logging
+      - tensorflow-proto
+      - tensorflow-opgen
+      - tensorflow-test
+  - snappy-0.2.0.2
+  - snappy-framing-0.1.1
+  - tensorflow-records-0.1.0.0
+  - tensorflow-records-conduit-0.1.0.0
+
+extra-include-dirs:
+  - /usr/local/include
+
+extra-lib-dirs:
+  - /usr/local/lib
