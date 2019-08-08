@@ -42,6 +42,7 @@ library
     , tensorflow-core-ops
     , tensorflow-logging
     , proto-lens
+    , random
     , vector
     , MazeGame
   default-language: Haskell2010
