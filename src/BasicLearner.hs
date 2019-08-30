@@ -13,7 +13,7 @@ import TensorFlow.Minimize
 import TensorFlow.Ops hiding (initializedVariable)
 import TensorFlow.Variable
 
-import Serialization
+import LearnerLib.Serialization
 import Runner (stepWorld, updateEnvironment)
 import Types
 
@@ -77,7 +77,7 @@ runWorldIteration model = do
   let (newMove, newGen) = chooseMoveWithRandomChance bestMove gen randomChance
 
   -- Get new World based on the ouput
-  let nextWorld = updateEnvironment (stepWorld newMove prevWorld)
+  let (nextWorld, _) = stepWorld newMove prevWorld
   let (newReward, continuationAction) = case worldResult nextWorld of
         GameInProgress -> (0.0, runWorldIteration model)
         GameWon -> (1.0, return True)

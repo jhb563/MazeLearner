@@ -5,7 +5,7 @@ packages:
 
 extra-deps:
   - git: https://github.com/jhb563/MazeGame.git
-    commit: 4a8bbb2f79035c7e45ac79767142c0d778186487
+    commit: 3c7cb4e2379681c50d922566f76991499bcb4e54
   - git: https://github.com/tensorflow/haskell.git
     commit: d741c3ee59a5c9569fb2026bd01c1c8ff22fa7c7
     subdirs:

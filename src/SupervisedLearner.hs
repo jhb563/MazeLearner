@@ -12,7 +12,6 @@ import Data.Csv
 import Data.Int (Int64)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import GHC.Generics
 import System.IO
 import System.Random (getStdGen)
 import System.Random.Shuffle (shuffleM)
@@ -21,12 +20,15 @@ import TensorFlow.Minimize
 import TensorFlow.Ops hiding (initializedVariable, pack)
 import TensorFlow.Variable
 
+import Serialization (vectorizeWorld'')
 import LearnerLib.Serialization (moveFromIndex, vectorizeWorld)
+import MazeParser (generateRandomMaze)
 import Runner (generateRandomWorld, stepWorld)
 import Types
+import MoveRecordTypes
 
 moveFeatures :: Int64
-moveFeatures = 40
+moveFeatures = 114
 
 hiddenUnits :: Int64
 hiddenUnits = 100
@@ -34,119 +36,146 @@ hiddenUnits = 100
 moveLabels :: Int64
 moveLabels = 10
 
-data MoveRecord = MoveRecord
-  { upActiveEnemy :: Float
-  , upShortestPath :: Float
-  , upManhattanDistance :: Float
-  , upEnemiesOnPath :: Float
-  , upNearestEnemyDistance :: Float
-  , upNumNearbyEnemies :: Float
-  , upStunAvailable :: Float
-  , upDrillsRemaining :: Float
-  , rightActiveEnemy :: Float
-  , rightShortestPath :: Float
-  , rightManhattanDistance :: Float
-  , rightEnemiesOnPath :: Float
-  , rightNearestEnemyDistance :: Float
-  , rightNumNearbyEnemies :: Float
-  , rightStunAvailable :: Float
-  , rightDrillsRemaining :: Float
-  , downActiveEnemy :: Float
-  , downShortestPath :: Float
-  , downManhattanDistance :: Float
-  , downEnemiesOnPath :: Float
-  , downNearestEnemyDistance :: Float
-  , downNumNearbyEnemies :: Float
-  , downStunAvailable :: Float
-  , downDrillsRemaining :: Float
-  , leftActiveEnemy :: Float
-  , leftShortestPath :: Float
-  , leftManhattanDistance :: Float
-  , leftEnemiesOnPath :: Float
-  , leftNearestEnemyDistance :: Float
-  , leftNumNearbyEnemies :: Float
-  , leftStunAvailable :: Float
-  , leftDrillsRemaining :: Float
-  , stillActiveEnemy :: Float
-  , stillShortestPath :: Float
-  , stillManhattanDistance :: Float
-  , stillEnemiesOnPath :: Float
-  , stillNearestEnemyDistance :: Float
-  , stillNumNearbyEnemies :: Float
-  , stillStunAvailable :: Float
-  , stillDrillsRemaining :: Float
-  , resultingMove :: Float
-  }
-  deriving (Generic)
-
-instance FromRecord MoveRecord
-
 sampleSize :: Int
 sampleSize = 100
 
-readRecordFromFile :: FilePath -> IO (Vector MoveRecord)
+readRecordFromFile :: FilePath -> IO (Vector MoveRecord114)
 readRecordFromFile fp = do
   contents <- pack <$> readFile fp
-  let results = decode NoHeader contents :: Either String (Vector MoveRecord)
+  let results = decode NoHeader contents :: Either String (Vector MoveRecord114)
   case results of
     Left err -> error err
     Right records -> return records
 
-chooseRandomRecords :: Vector MoveRecord -> IO (Vector MoveRecord)
+chooseRandomRecords :: Vector MoveRecord114 -> IO (Vector MoveRecord114)
 chooseRandomRecords records = do
   let numRecords = V.length records
   chosenIndices <- take sampleSize <$> shuffleM [0..(numRecords - 1)]
   return $ V.fromList $ map (records V.!) chosenIndices
 
-convertRecordsToTensorData :: Vector MoveRecord -> (TensorData Float, TensorData Int64)
+convertRecordsToTensorData :: Vector MoveRecord114 -> (TensorData Float, TensorData Int64)
 convertRecordsToTensorData records = (input, output)
   where
     numRecords = V.length records
     input = encodeTensorData (Shape [fromIntegral numRecords, fromIntegral moveFeatures]) (V.fromList $ concatMap recordToInputs records)
-    output = encodeTensorData (Shape [fromIntegral numRecords]) (round . resultingMove <$> records)
-    recordToInputs :: MoveRecord -> [Float]
+    output = encodeTensorData (Shape [fromIntegral numRecords]) (round . resultingMove114 <$> records)
+    recordToInputs :: MoveRecord114 -> [Float]
     recordToInputs rec =
-      [ upActiveEnemy rec
-      , upShortestPath rec
-      , upManhattanDistance rec
-      , upEnemiesOnPath rec
-      , upNearestEnemyDistance rec
-      , upNumNearbyEnemies rec
-      , upStunAvailable rec
-      , upDrillsRemaining rec
-      , rightActiveEnemy rec
-      , rightShortestPath rec
-      , rightManhattanDistance rec
-      , rightEnemiesOnPath rec
-      , rightNearestEnemyDistance rec
-      , rightNumNearbyEnemies rec
-      , rightStunAvailable rec
-      , rightDrillsRemaining rec
-      , downActiveEnemy rec
-      , downShortestPath rec
-      , downManhattanDistance rec
-      , downEnemiesOnPath rec
-      , downNearestEnemyDistance rec
-      , downNumNearbyEnemies rec
-      , downStunAvailable rec
-      , downDrillsRemaining rec
-      , leftActiveEnemy rec
-      , leftShortestPath rec
-      , leftManhattanDistance rec
-      , leftEnemiesOnPath rec
-      , leftNearestEnemyDistance rec
-      , leftNumNearbyEnemies rec
-      , leftStunAvailable rec
-      , leftDrillsRemaining rec
-      , stillActiveEnemy rec
-      , stillShortestPath rec
-      , stillManhattanDistance rec
-      , stillEnemiesOnPath rec
-      , stillNearestEnemyDistance rec
-      , stillNumNearbyEnemies rec
-      , stillStunAvailable rec
-      , stillDrillsRemaining rec
-      ] 
+      [ grid09 rec
+      , grid19 rec
+      , grid29 rec
+      , grid39 rec
+      , grid49 rec
+      , grid59 rec
+      , grid69 rec
+      , grid79 rec
+      , grid89 rec
+      , grid99 rec
+      , grid08 rec
+      , grid18 rec
+      , grid28 rec
+      , grid38 rec
+      , grid48 rec
+      , grid58 rec
+      , grid68 rec
+      , grid78 rec
+      , grid88 rec
+      , grid98 rec
+      , grid07 rec
+      , grid17 rec
+      , grid27 rec
+      , grid37 rec
+      , grid47 rec
+      , grid57 rec
+      , grid67 rec
+      , grid77 rec
+      , grid87 rec
+      , grid97 rec
+      , grid06 rec
+      , grid16 rec
+      , grid26 rec
+      , grid36 rec
+      , grid46 rec
+      , grid56 rec
+      , grid66 rec
+      , grid76 rec
+      , grid86 rec
+      , grid96 rec
+      , grid05 rec
+      , grid15 rec
+      , grid25 rec
+      , grid35 rec
+      , grid45 rec
+      , grid55 rec
+      , grid65 rec
+      , grid75 rec
+      , grid85 rec
+      , grid95 rec
+      , grid04 rec
+      , grid14 rec
+      , grid24 rec
+      , grid34 rec
+      , grid44 rec
+      , grid54 rec
+      , grid64 rec
+      , grid74 rec
+      , grid84 rec
+      , grid94 rec
+      , grid03 rec
+      , grid13 rec
+      , grid23 rec
+      , grid33 rec
+      , grid43 rec
+      , grid53 rec
+      , grid63 rec
+      , grid73 rec
+      , grid83 rec
+      , grid93 rec
+      , grid02 rec
+      , grid12 rec
+      , grid22 rec
+      , grid32 rec
+      , grid42 rec
+      , grid52 rec
+      , grid62 rec
+      , grid72 rec
+      , grid82 rec
+      , grid92 rec
+      , grid01 rec
+      , grid11 rec
+      , grid21 rec
+      , grid31 rec
+      , grid41 rec
+      , grid51 rec
+      , grid61 rec
+      , grid71 rec
+      , grid81 rec
+      , grid91 rec
+      , grid00 rec
+      , grid10 rec
+      , grid20 rec
+      , grid30 rec
+      , grid40 rec
+      , grid50 rec
+      , grid60 rec
+      , grid70 rec
+      , grid80 rec
+      , grid90 rec
+      , playerX rec
+      , playerY rec
+      , playerStun rec
+      , playerDrills rec
+      , e1X rec
+      , e1Y rec
+      , e1Stun rec
+      , e2X rec
+      , e2Y rec
+      , e2Stun rec
+      , d1X rec
+      , d1Y rec
+      , d2X rec
+      , d2Y rec
+      ]
 
 buildNNLayer :: Int64 -> Int64 -> Tensor v Float -> Build (Variable Float, Variable Float, Tensor Build Float)
 buildNNLayer inputSize outputSize input = do
@@ -258,7 +287,7 @@ readWeightsAndBiases fp = do
 runWorldIteration :: PlayModel -> StateT World Session Bool
 runWorldIteration model = do
   w <- get
-  let worldData = encodeTensorData (Shape [1, 40]) (vectorizeWorld w)
+  let worldData = encodeTensorData (Shape [1, 114]) (vectorizeWorld'' w)
   moveIndex <- lift $ (getMove model) worldData
   let nextMove = moveFromIndex (fromIntegral $ V.head moveIndex)
   let (nextWorld, _) = stepWorld nextMove w
@@ -272,12 +301,14 @@ playGameIterations :: FilePath -> Session Int
 playGameIterations fp = do
   (w1, b1, w2, b2) <- liftIO $ readWeightsAndBiases fp
   model <- build $ createPlayModel (w1, b1, w2, b2)
-  let gameParams = defaultGameParameters
-  results <- forM [1..1000] $ \i -> do
+  let gameParams = defaultGameParameters { numEnemies = 2, numDrillPowerups = 2 }
+  results <- forM [1..100] $ \i -> do
     liftIO $ print i
     gen <- liftIO getStdGen
-    let w = generateRandomWorld gameParams gen
-    evalStateT (runWorldIteration model) w
+    let (randomMaze, gen') = generateRandomMaze gen (10, 10)
+    let w = generateRandomWorld gameParams gen'
+    let w' = w { worldBoundaries = randomMaze }
+    evalStateT (runWorldIteration model) w'
   return $ length (filter id results)
 
 playGameTraining :: FilePath -> IO Int
