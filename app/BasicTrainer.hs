@@ -5,7 +5,7 @@ import WorldParser (loadWorldFromFile)
 
 main :: IO ()
 main = do
-  world <- loadWorldFromFile "training_games/maze_grid_10_10_2_1.game"
+  world <- loadWorldFromFile "training_games/empty_grid_5_5_1_0.game"
   (winCount, finalWeights) <- playGameTraining world
   print winCount
   print finalWeights
