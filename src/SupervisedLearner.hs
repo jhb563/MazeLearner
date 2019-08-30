@@ -4,7 +4,8 @@
 
 module SupervisedLearner where
 
-import Control.Monad (when, forM_)
+import Control.Monad (when, forM_, forM)
+import Control.Monad.State (StateT, evalStateT, get, put, lift)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Csv
@@ -12,11 +13,17 @@ import Data.Int (Int64)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import GHC.Generics
-import System.Random.Shuffle
+import System.IO
+import System.Random (getStdGen)
+import System.Random.Shuffle (shuffleM)
 import TensorFlow.Core
 import TensorFlow.Minimize
 import TensorFlow.Ops hiding (initializedVariable, pack)
 import TensorFlow.Variable
+
+import LearnerLib.Serialization (moveFromIndex, vectorizeWorld)
+import Runner (generateRandomWorld, stepWorld)
+import Types
 
 moveFeatures :: Int64
 moveFeatures = 40
@@ -221,3 +228,57 @@ runTraining totalFile = runSession $ do
   w2' <- run (readValue $ w2 model)
   b2' <- run (readValue $ b2 model)
   return (w1', b1', w2', b2')
+
+data PlayModel = PlayModel
+  { getMove :: TensorData Float -> Session (V.Vector Int64) }
+
+createPlayModel :: (V.Vector Float, V.Vector Float, V.Vector Float, V.Vector Float) -> Build PlayModel
+createPlayModel (w1, b1, w2, b2) = do
+  inputFeatures <- placeholder [moveFeatures]
+  let w1' = constant (Shape [moveFeatures, hiddenUnits]) (V.toList w1)
+  let b1' = constant (Shape [hiddenUnits]) (V.toList b1)
+  let w2' = constant (Shape [hiddenUnits, moveLabels]) (V.toList w2)
+  let b2' = constant (Shape [moveLabels]) (V.toList b2)
+  let hiddenResults = relu $ (inputFeatures `matMul` w1') `add` b1'
+  let finalResults = (hiddenResults `matMul` w2') `add` b2'
+  let outputMove = argMax finalResults (scalar (1 :: Int64))
+  return $ PlayModel
+    { getMove = \inputFeed -> runWithFeeds [ feed inputFeatures inputFeed ] outputMove }
+
+readWeightsAndBiases :: FilePath -> IO (V.Vector Float, V.Vector Float, V.Vector Float, V.Vector Float)
+readWeightsAndBiases fp = do
+  handle <- openFile fp ReadMode
+  w1 <- read <$> hGetLine handle
+  b1 <- read <$> hGetLine handle
+  w2 <- read <$> hGetLine handle
+  b2 <- read <$> hGetLine handle
+  hClose handle
+  return (w1, b1, w2, b2)
+
+runWorldIteration :: PlayModel -> StateT World Session Bool
+runWorldIteration model = do
+  w <- get
+  let worldData = encodeTensorData (Shape [1, 40]) (vectorizeWorld w)
+  moveIndex <- lift $ (getMove model) worldData
+  let nextMove = moveFromIndex (fromIntegral $ V.head moveIndex)
+  let (nextWorld, _) = stepWorld nextMove w
+  put nextWorld
+  case (worldResult nextWorld) of
+    GameInProgress -> runWorldIteration model
+    GameWon -> return True
+    GameLost -> return False
+
+playGameIterations :: FilePath -> Session Int
+playGameIterations fp = do
+  (w1, b1, w2, b2) <- liftIO $ readWeightsAndBiases fp
+  model <- build $ createPlayModel (w1, b1, w2, b2)
+  let gameParams = defaultGameParameters
+  results <- forM [1..1000] $ \i -> do
+    liftIO $ print i
+    gen <- liftIO getStdGen
+    let w = generateRandomWorld gameParams gen
+    evalStateT (runWorldIteration model) w
+  return $ length (filter id results)
+
+playGameTraining :: FilePath -> IO Int
+playGameTraining fp = runSession (playGameIterations fp)
